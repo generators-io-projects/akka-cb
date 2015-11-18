@@ -1,9 +1,13 @@
 package io.generators.akka.cb
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.CircuitBreakerOpenException
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+
+import scala.concurrent.duration.FiniteDuration
 
 
 class CircuitBreakerTest(_system: ActorSystem) extends TestKit(_system) with ImplicitSender with WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -42,7 +46,7 @@ class CircuitBreakerTest(_system: ActorSystem) extends TestKit(_system) with Imp
       expectMsgPF() {
         case FailResponse(e: CircuitBreakerOpenException) =>
       }
-      Thread.sleep(2000)
+      Thread.sleep(3000)
       circuitBreaker ! OkMessage(6)
       circuitBreaker ! OkMessage(7)
       expectMsgAllOf(OkResponse(6), OkResponse(7))
@@ -59,6 +63,9 @@ case class OkResponse(number: Int)
 case class FailResponse(e: Throwable)
 
 class CircuitBreakerTester extends CircuitBreakerSupport with Actor {
+  override val maxFailures : Int = 3
+  override val halfOpenDuration: FiniteDuration = FiniteDuration(2, TimeUnit.SECONDS)
+
   def receive: Receive = {
     case OkMessage(num) => sender ! OkResponse(num)
     case FailMessage(num) => throw new RuntimeException("Abc")

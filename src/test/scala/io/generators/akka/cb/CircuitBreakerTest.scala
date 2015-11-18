@@ -30,12 +30,12 @@ class CircuitBreakerTest(_system: ActorSystem) extends TestKit(_system) with Imp
       expectMsgAllOf(OkResponse(1), OkResponse(2))
       circuitBreaker ! FailMessage(3)
       expectMsgPF() {
-        case FailResponse(e: RuntimeException) =>
+        case FailResponse(e: IllegalArgumentException) =>
       }
 
       circuitBreaker ! FailMessage(4)
       expectMsgPF() {
-        case FailResponse(e: RuntimeException) =>
+        case FailResponse(e: IllegalArgumentException) =>
       }
 
       circuitBreaker ! FailMessage(5)
@@ -50,6 +50,11 @@ class CircuitBreakerTest(_system: ActorSystem) extends TestKit(_system) with Imp
       circuitBreaker ! OkMessage(6)
       circuitBreaker ! OkMessage(7)
       expectMsgAllOf(OkResponse(6), OkResponse(7))
+      circuitBreaker ! FailMessage(8)
+      expectMsgPF() {
+        case FailResponse(e: IllegalArgumentException) =>
+      }
+
     }
   }
 }
@@ -68,7 +73,7 @@ class CircuitBreakerTester extends CircuitBreakerSupport with Actor {
 
   def receive: Receive = {
     case OkMessage(num) => sender ! OkResponse(num)
-    case FailMessage(num) => throw new RuntimeException("Abc")
+    case FailMessage(num) => throw new IllegalArgumentException("Abc")
   }
 }
 

@@ -18,6 +18,7 @@ trait CircuitBreakerSupport extends Actor with ActorLogging {
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
     try {
       receive.applyOrElse(msg, unhandled)
+      counter.set(0)
     } catch {
       case NonFatal(e) => e match {
         case e: Throwable => if (counter.incrementAndGet() < maxFailures) {

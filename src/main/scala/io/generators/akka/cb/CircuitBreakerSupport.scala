@@ -13,7 +13,8 @@ import scala.util.control.NonFatal
 trait CircuitBreakerSupport extends Actor with ActorLogging {
   val counter: AtomicLong = new AtomicLong(0)
   val maxFailures: Int = 5
-  val halfOpenDuration: FiniteDuration = FiniteDuration(1, TimeUnit.MINUTES)
+  val resetDuration: FiniteDuration = FiniteDuration(1, TimeUnit.MINUTES)
+  val timeoutDuration: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
     try {
@@ -25,7 +26,7 @@ trait CircuitBreakerSupport extends Actor with ActorLogging {
           throw e
         } else {
           context.become(circutOpenReceive)
-          context.system.scheduler.scheduleOnce(halfOpenDuration){context.become(circutHalfOpen)}(context.dispatcher)
+          context.system.scheduler.scheduleOnce(resetDuration){context.become(circutHalfOpen)}(context.dispatcher)
           notifyBroken
         }
       }
@@ -33,7 +34,7 @@ trait CircuitBreakerSupport extends Actor with ActorLogging {
   }
 
   def notifyBroken: Nothing = {
-    throw new CircuitBreakerOpenException(halfOpenDuration)
+    throw new CircuitBreakerOpenException(resetDuration)
   }
 
   def circutOpenReceive: Receive = {
